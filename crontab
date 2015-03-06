@@ -1,0 +1,3 @@
+* * * * * sudo /home/pi/runSnow.sh
+* * * * * /home/pi/snow_hockey/autopull.sh > /home/pi/snow_hockey/cron.log
+
