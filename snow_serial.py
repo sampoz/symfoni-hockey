@@ -64,7 +64,7 @@ def main():
 			GPIO.output(15, True)
 			time.sleep(1)
 			if ser.inWaiting()>0:
-                                print "Calibrated port for Away(0) Team"
+                                print "Calibrated port for Away(1) Team"
                                 time.sleep(7)
                                 ser.flushInput()
                                 ser1.flushInput()
@@ -75,7 +75,7 @@ def main():
 				isCalibrated=True
 				break
                         if ser1.inWaiting()>0:
-				print "Calibrated port for Home(1) Team"
+				print "Calibrated port for Home(0) Team"
                                 time.sleep(7)
                                 ser.flushInput()
 				ser1.flushInput()
@@ -105,7 +105,7 @@ def main():
 				ser.flushInput()
                         if ser1.inWaiting()>0:
                                 print "Away goal"
-                                client.service.insert(u_goal = '1')
+                                client.service.insert(u_goal_post = '1')
 				time.sleep(7)
 				ser1.flushInput()
                         GPIO.output(18, True)
