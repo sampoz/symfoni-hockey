@@ -1,3 +1,3 @@
 #! /bin/bash
-cd /home/pi/snow_hockey/
+cd /home/pi/symfoni-hockey/
 git pull
