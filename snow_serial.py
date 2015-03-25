@@ -178,19 +178,19 @@ class ping_thread(threading.Thread):
             threading.Thread.__init__(self)
             self.url = kwargs["url"]
         def run(self):
-		        print "testing ping"
-		        try:
-		                response = os.system("ping -c 1 -q " + self.url) # q for quiet
-		                #and then check the response...
-		                if response == 0:
-		                        print testsite, 'is up!'
-		                else:
-		                        print testsite, 'is down!'
+	        print "testing ping"
+	        try:
+                response = os.system("ping -c 1 -q " + self.url) # q for quiet
+                #and then check the response...
+                if response == 0:
+                    print testsite, 'is up!'
+                else:
+                    print testsite, 'is down!'
 
-		        except IOError, e:
-		                GPIO.output(15, False)
-		                raise IOError('Network not working, could not ping ' + testsite +  ', error was ' + str(e)
-		        GPIO.output(15, True)
+	        except IOError, e:
+                GPIO.output(15, False)
+                raise IOError('Network not working, could not ping ' + testsite +  ', error was ' + str(e)
+	        GPIO.output(15, True)
 	    print "Pinged " + url 
 
 try:
