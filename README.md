@@ -23,4 +23,3 @@
 # SNC Instance side 
 * create soap user
 * grant roles(symfoni hockey + soap)
-
