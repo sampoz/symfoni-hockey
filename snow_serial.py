@@ -39,13 +39,14 @@ def main():
 		GPIO.setup(15, GPIO.OUT) #plus of led2
                 GPIO.output(15, False)
 
-		#update ip
+		#update ip and send logs
 		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		s.connect(('google.com', 0))
 		ipString = socket.gethostbyname(s.getsockname()[0])
 		print ipString
-		updateIpClient.service.insert(u_ip = ipString)
-		
+		#get logs
+		log =  subprocess.check_output(["echo", "Hello World!"])
+		updateIpClient.service.insert(u_ip = ipString, u_log_entry=log)
 		#test ping
 		testPing()
 		i=0
