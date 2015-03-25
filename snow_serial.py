@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-Ã
 import serial
 import suds
 import RPi.GPIO as GPIO
@@ -5,11 +6,11 @@ import time
 import os
 import glob
 import socket
-import ping
 
 isCalibrated=False
-
-
+instanceURL='https://symfonik15.service-now.com'
+user='soap.hockey'
+soapPassword='10L2M6fSN4JnHcH5ccq1'
 def main():
         try:
                 print 'Starting program:'
@@ -24,12 +25,18 @@ def main():
                 ser1 = serial.Serial(ports[1], timeout=1)
                 
 		#setup soap 
-		url = 'https://topten.service-now.com/u_hockey_goals.do?WSDL'
-                urlUpdateIp = 'https://symfonidemofl.service-now.com/u_hockey_raspberry_ip.do?WSDL'
-		client = suds.client.Client(url, username='Hockey_admin', password='0!739Ac75N6*b81z')
-		updateIpClient= suds.client.Client(urlUpdateIp, username='Hockey_admin', password='0!739Ac75N6*b81z')
-                
+		global instanceURL
+		global user
+		global soapPassword
+		url = instanceURL + '/u_symfoni_hockey_goal.do?WSDL'
+                urlUpdateIp = instanceURL + '/u_symfoni_hockey_raspberry_pi_status.do?WSDL'
+		client = suds.client.Client(url, username=user, password=soapPassword)
+		updateIpClient= suds.client.Client(urlUpdateIp, username=user, password=soapPassword)
+		print"Got wsdls and set up clients"                
+
 		#Led pin setup
+		#Set GPIO numbering scheme to be BOARD (pin numbers, not names)
+		GPIO.setmode(GPIO.BOARD) 
 		#led1
 		GPIO.setup(18, GPIO.OUT)
                 GPIO.output(18, False)
@@ -47,9 +54,9 @@ def main():
 		#get logs
 		log =  subprocess.check_output(["echo", "Hello World!"])
 		updateIpClient.service.insert(u_ip = ipString, u_log_entry=log)
+		print "Sent ip to SNC instance " + url
 		#test ping
 		testPing()
-		i=0
 
 		#calibrate goal ports
 		global isCalibrated
@@ -59,7 +66,7 @@ def main():
 			GPIO.output(15, True)
 			time.sleep(1)
 			if ser.inWaiting()>0:
-                                print "Calibrated port for Away Team"
+                                print "Calibrated port for Away(1) Team"
                                 time.sleep(7)
                                 ser.flushInput()
                                 ser1.flushInput()
@@ -70,7 +77,7 @@ def main():
 				isCalibrated=True
 				break
                         if ser1.inWaiting()>0:
-				print "Calibrated port for Away Team"
+				print "Calibrated port for Home(0) Team"
                                 time.sleep(7)
                                 ser.flushInput()
 				ser1.flushInput()
@@ -89,17 +96,18 @@ def main():
 
 
 		#main loop
+		i=0
                 while (True):
 			i+=1
 			GPIO.output(18, False)
                         if ser.inWaiting()>0:
-                                client.service.insert(u_goal = 'Suomi')
-                                print "ja joukkue oli Suomi!"
+                                client.service.insert(u_goal_post = '0')
+                                print "Home goal"
 				time.sleep(7)
 				ser.flushInput()
                         if ser1.inWaiting()>0:
-                                print "ja joukkue oli Ruotsi"
-                                client.service.insert(u_goal = 'Ruotsi')
+                                print "Away goal"
+                                client.service.insert(u_goal_post = '1')
 				time.sleep(7)
 				ser1.flushInput()
                         GPIO.output(18, True)
@@ -124,14 +132,22 @@ def scan():
    return glob.glob('/dev/ttyS*') + glob.glob('/dev/ttyUSB*')
 
 def testPing():
-
 	print "testing ping"
 	try:
-		delay = ping.Ping('www.google.com', timeout=2000).do()
+		# Refactor ping
+		testsite = "www.google.com"		
+		response = os.system("ping -c 1 " + testsite)
+
+		#and then check the response...
+		if response == 0:
+  			print testsite, 'is up!'
+		else:
+  			print testsite, 'is down!'
+		
+		#delay = ping.Ping('www.google.com', timeout=2000).do()
 	except IOError, e:
 		GPIO.output(15, False)
-		raise IOError("Network not working, could not ping google, error was "+ str(e))
-	print "Google works, delay was "+ str(delay)
+		raise IOError('Network not working, could not ping ' + testsite +  ', error was '+ str(e))
 	GPIO.output(15, True)
 
 try:

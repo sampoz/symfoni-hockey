@@ -6,6 +6,6 @@ if ps -ef | grep -v grep | grep snow_serial ; then
         exit 0
 else
         sleep 10
-	python /home/pi/snow_hockey/snow_serial.py >> /home/pi/snow_hockey/snow.log & 
+	python /home/pi/symfoni-hockey/snow_serial.py >> /home/pi/symfoni-hockey/snow.log & 
         exit 0
 fi
