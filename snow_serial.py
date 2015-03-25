@@ -15,7 +15,7 @@ soapPassword='10L2M6fSN4JnHcH5ccq1'
 def main():
         try:
                 print 'Starting program:'
-
+		print subprocess.check_output("date") # log time
 		# find usable serial ports
 		ports = scan()
 		print "Found ports:"
@@ -53,7 +53,7 @@ def main():
 		ipString = socket.gethostbyname(s.getsockname()[0])
 		print ipString
 		#get logs
-		log =  subprocess.check_output(["tail", "-n 20", "snow.log"])
+		log =  subprocess.check_output(["tail", "-n 20", "/home/pi/symfoni-hockey/snow.log"])
 		updateIpClient.service.insert(u_ip = ipString, u_log_entry=log)
 		print "Sent ip to SNC instance " + url
 		#test ping
@@ -113,7 +113,7 @@ def main():
 				ser1.flushInput()
                         GPIO.output(18, True)
 			time.sleep(0.1)
-			if i%100==0:
+			if i%1000==0:
 				testPing()
 			if i>4000:
 				i=0
