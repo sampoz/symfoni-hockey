@@ -1,3 +1,2 @@
 ping
 suds
-py-serial
