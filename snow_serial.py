@@ -33,8 +33,8 @@ def main():
 		url = instanceURL + '/u_symfoni_hockey_goal.do?WSDL'
                 urlUpdateIp = instanceURL + '/u_symfoni_hockey_raspberry_pi_status.do?WSDL'
 		client = suds.client.Client(url, username=user, password=soapPassword)
-		home_goal_thread = goal_thread(client, u_goal_post=0)
-		away_goal_thread = goal_thread(client, u_goal_post=1)
+		home_goal_thread = goal_thread(client=client, u_goal_post=0)
+		away_goal_thread = goal_thread(client=client, u_goal_post=1)
 		updateIpClient= suds.client.Client(urlUpdateIp, username=user, password=soapPassword)
 		print"Got wsdls and set up clients"                
 
@@ -60,7 +60,8 @@ def main():
 		client_update_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_log_entry=log)
 		client_update_thread.start()
 		#test ping
-		testPing()
+		ping_thread = ping_thread("www.google.com")
+		ping_thread.run()
 
 		#calibrate goal ports
 		global isCalibrated
@@ -169,8 +170,32 @@ class goal_thread(threading.Thread):
             self.client = kwargs["client"]
             self.u_goal_post = kwargs["u_goal_post"]
         def run(self):
-            self.client.service.insert(u_goal_post=kwargs["u_goal_post")
-            print "Send ip to SNC instance from thread"
+            self.client.service.insert(u_goal_post=self.u_goal_post)
+            print "Send goal to post " + str(self.u_goal_post) + " from thread"
+
+class ping_thread(threading.Thread):
+        def __init__(self, **kwargs):
+            threading.Thread.__init__(self)
+            self.url = kwargs["url"]
+        def run(self):
+		        print "testing ping"
+        try:
+                # Refactor ping
+                testsite = "www.google.com"
+                response = os.system("ping -c 1 " + testsite)
+
+                #and then check the response...
+                if response == 0:
+                        print testsite, 'is up!'
+                else:
+                        print testsite, 'is down!'
+
+        except IOError, e:
+                GPIO.output(15, False)
+                raise IOError('Network not working, could not ping ' + testsite +  ', error was '$
+        GPIO.output(15, True)
+
+	    print "Pinged " + url 
 
 try:
 	main()
