@@ -18,7 +18,7 @@ if [ "$_IP" ]; then
 fi
 
 printf "Running Snow hockey script"
-/home/pi/snow_hockey/runSnow.sh &
+/home/pi/symfoni-hockey/runSnow.sh &
 
 
 exit 0
