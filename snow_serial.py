@@ -9,10 +9,11 @@ import socket
 import subprocess
 import threading
 
-isCalibrated=False
-instanceURL='https://symfonik15.service-now.com'
-user='soap.hockey'
-soapPassword='10L2M6fSN4JnHcH5ccq1'
+isCalibrated = False
+instanceURL = 'https://symfonik15.service-now.com'
+user = 'soap.hockey'
+soapPassword = '10L2M6fSN4JnHcH5ccq1'
+goal_interval = 5
 def main():
         try:
             print 'Starting program:'
@@ -60,8 +61,8 @@ def main():
             client_update_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_log_entry=log)
             client_update_thread.start()
             #test ping
-            ping_thread = ping_thread("www.google.com")
-            ping_thread.run()
+            ping_update_thread = ping_thread(url="www.google.com")
+            ping_update_thread.run()
 
             #calibrate goal ports
             global isCalibrated
@@ -72,7 +73,7 @@ def main():
                 time.sleep(1)
                 if ser.inWaiting()>0:
                     print "Calibrated port for Away(1) Team"
-                    time.sleep(7)
+                    time.sleep(goal_interval)
                     ser.flushInput()
                     ser1.flushInput()
                     ser1.close()
@@ -83,7 +84,7 @@ def main():
                     break
                 if ser1.inWaiting()>0:
                     print "Calibrated port for Home(0) Team"
-                    time.sleep(7)
+                    time.sleep(goal_interval)
                     ser.flushInput()
                     ser1.flushInput()
                     ser1.close()
@@ -115,9 +116,9 @@ def main():
                     time.sleep(7)
                     ser1.flushInput()
                     GPIO.output(18, True)
-                time.sleep(0.1)
+                time.sleep(0.01)
                 if i%1000==0:
-                    testPing()
+                    ping_update_thread.run()
                 if i>4000:
                     i=0
             GPIO.output(15, False)
@@ -156,9 +157,9 @@ def testPing():
 class sender_thread(threading.Thread):
         def __init__(self, **kwargs):
             threading.Thread.__init__(self)
-        self.client = kwargs["client"]
-        self.u_ip = kwargs["u_ip"]
-        self.u_log_entry = kwargs["u_log_entry"]
+            self.client = kwargs["client"]
+            self.u_ip = kwargs["u_ip"]
+            self.u_log_entry = kwargs["u_log_entry"]
         def run(self):
             self.client.service.insert(u_ip=self.u_ip, u_log_entry=self.u_log_entry)
         print "Send ip to SNC instance from thread"
@@ -182,15 +183,15 @@ class ping_thread(threading.Thread):
                     response = os.system("ping -c 1 -q " + self.url) # q for quiet
                     #and then check the response...
                     if response == 0:
-                        print testsite, 'is up!'
+                        print self.url, 'is up!'
                     else:
-                        print testsite, 'is down!'
+                        print self.url, 'is down!'
 
             except IOError, e:
                     GPIO.output(15, False)
-                    raise IOError('Network not working, could not ping ' + testsite +  ', error was ' + str(e))
+                    raise IOError('Network not working, could not ping ' + self.url +  ', error was ' + str(e))
             GPIO.output(15, True)
-            print "Pinged " + url 
+            print "Pinged " + self.url 
 
 try:
     main()
