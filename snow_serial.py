@@ -55,7 +55,8 @@ def main():
 		print ipString
 		#get logs
 		log =  subprocess.check_output(["tail", "-n 20", "/home/pi/symfoni-hockey/snow.log"])
-		updateIpClient.service.insert(u_ip = ipString, u_log_entry=log)
+		client_update_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_log_entry=log)
+		client_update_thread.start()
 		print "Sent ip to SNC instance " + url
 		#test ping
 		testPing()
@@ -160,5 +161,10 @@ except KeyboardInterrupt:
                 print "User terminated program"
                 exit()
 
-class sender_thread(thre
+class sender_thread(threading.Thread):
+	def __init__(self, **kwargs):
+	    threading.Thread.__init__(self)
+	def run(self):
+	    kwargs["client"].service.insert(u_ip=kwargs["u_ip"], u_log_entry=kwargs["u_log_entry"])
+	    
 
