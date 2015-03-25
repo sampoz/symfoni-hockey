@@ -59,7 +59,7 @@ def main():
             #get logs
             log =  subprocess.check_output(["tail", "-n 20", "/home/pi/symfoni-hockey/snow.log"])
             client_update_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_log_entry=log)
-            client_update_thread.start()
+            client_update_thread.run()
             #test ping
             ping_update_thread = ping_thread(url="www.google.com")
             ping_update_thread.run()
@@ -136,24 +136,6 @@ def scan():
    # scan for available ports. return a list of device names.
    return glob.glob('/dev/ttyS*') + glob.glob('/dev/ttyUSB*')
 
-def testPing():
-    print "testing ping"
-    try:
-        # Refactor ping
-        testsite = "www.google.com"     
-        response = os.system("ping -c 1 " + testsite)
-
-        #and then check the response...
-        if response == 0:
-            print testsite, 'is up!'
-        else:
-            print testsite, 'is down!'
-        
-    except IOError, e:
-        GPIO.output(15, False)
-        raise IOError('Network not working, could not ping ' + testsite +  ', error was '+ str(e))
-    GPIO.output(15, True)
-
 class sender_thread(threading.Thread):
         def __init__(self, **kwargs):
             threading.Thread.__init__(self)
@@ -161,8 +143,8 @@ class sender_thread(threading.Thread):
             self.u_ip = kwargs["u_ip"]
             self.u_log_entry = kwargs["u_log_entry"]
         def run(self):
-            self.client.service.insert(u_ip=self.u_ip, u_log_entry=self.u_log_entry)
-        print "Send ip to SNC instance from thread"
+            print self.client.service.insert(u_ip=self.u_ip, u_log_entry=self.u_log_entry, u_startup="test")
+            print "Send ip to SNC instance from thread"
 
 class goal_thread(threading.Thread):
         def __init__(self, **kwargs):
