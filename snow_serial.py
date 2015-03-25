@@ -6,6 +6,7 @@ import time
 import os
 import glob
 import socket
+import subprocess
 
 isCalibrated=False
 instanceURL='https://symfonik15.service-now.com'
@@ -52,7 +53,7 @@ def main():
 		ipString = socket.gethostbyname(s.getsockname()[0])
 		print ipString
 		#get logs
-		log =  subprocess.check_output(["echo", "Hello World!"])
+		log =  subprocess.check_output(["tail", "-n 20", "snow.log"])
 		updateIpClient.service.insert(u_ip = ipString, u_log_entry=log)
 		print "Sent ip to SNC instance " + url
 		#test ping
