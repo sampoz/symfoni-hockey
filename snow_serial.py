@@ -33,6 +33,8 @@ def main():
 		url = instanceURL + '/u_symfoni_hockey_goal.do?WSDL'
                 urlUpdateIp = instanceURL + '/u_symfoni_hockey_raspberry_pi_status.do?WSDL'
 		client = suds.client.Client(url, username=user, password=soapPassword)
+		home_goal_thread = goal_thread(client, u_goal_post=0)
+		away_goal_thread = goal_thread(client, u_goal_post=1)
 		updateIpClient= suds.client.Client(urlUpdateIp, username=user, password=soapPassword)
 		print"Got wsdls and set up clients"                
 
@@ -57,7 +59,6 @@ def main():
 		log =  subprocess.check_output(["tail", "-n 20", "/home/pi/symfoni-hockey/snow.log"])
 		client_update_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_log_entry=log)
 		client_update_thread.start()
-		print "Sent ip to SNC instance " + url
 		#test ping
 		testPing()
 
@@ -104,13 +105,13 @@ def main():
 			i+=1
 			GPIO.output(18, False)
                         if ser.inWaiting()>0:
-                                client.service.insert(u_goal_post = '0')
+				home_goal_thread.run()
                                 print "Home goal"
 				time.sleep(7)
 				ser.flushInput()
                         if ser1.inWaiting()>0:
+				away_goal_thread.run()
                                 print "Away goal"
-                                client.service.insert(u_goal_post = '1')
 				time.sleep(7)
 				ser1.flushInput()
                         GPIO.output(18, True)
@@ -147,11 +148,29 @@ def testPing():
 		else:
   			print testsite, 'is down!'
 		
-		#delay = ping.Ping('www.google.com', timeout=2000).do()
 	except IOError, e:
 		GPIO.output(15, False)
 		raise IOError('Network not working, could not ping ' + testsite +  ', error was '+ str(e))
 	GPIO.output(15, True)
+
+class sender_thread(threading.Thread):
+        def __init__(self, **kwargs):
+            threading.Thread.__init__(self)
+	    self.client = kwargs["client"]
+	    self.u_ip = kwargs["u_ip"]
+	    self.u_log_entry = kwargs["u_log_entry"]
+        def run(self):
+            self.client.service.insert(u_ip=self.u_ip, u_log_entry=self.u_log_entry)
+	    print "Send ip to SNC instance from thread"
+
+class goal_thread(threading.Thread):
+        def __init__(self, **kwargs):
+            threading.Thread.__init__(self)
+            self.client = kwargs["client"]
+            self.u_goal_post = kwargs["u_goal_post"]
+        def run(self):
+            self.client.service.insert(u_goal_post=kwargs["u_goal_post")
+            print "Send ip to SNC instance from thread"
 
 try:
 	main()
@@ -160,11 +179,5 @@ except KeyboardInterrupt:
                 GPIO.output(18, False)
                 print "User terminated program"
                 exit()
-
-class sender_thread(threading.Thread):
-	def __init__(self, **kwargs):
-	    threading.Thread.__init__(self)
-	def run(self):
-	    kwargs["client"].service.insert(u_ip=kwargs["u_ip"], u_log_entry=kwargs["u_log_entry"])
 	    
 
