@@ -189,7 +189,7 @@ class ping_thread(threading.Thread):
 
 		        except IOError, e:
 		                GPIO.output(15, False)
-		                raise IOError('Network not working, could not ping ' + testsite +  ', error was '$
+		                raise IOError('Network not working, could not ping ' + testsite +  ', error was ' + str(e)
 		        GPIO.output(15, True)
 	    print "Pinged " + url 
 
