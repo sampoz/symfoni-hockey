@@ -42,22 +42,23 @@ def main():
             #Led pin setup
             #Set GPIO numbering scheme to be BOARD (pin numbers, not names)
             GPIO.setmode(GPIO.BOARD) 
-            #led1
-            GPIO.setup(18, GPIO.OUT)
-            GPIO.output(18, False)
-            #led2
-            GPIO.setup(7, GPIO.OUT) #minus of led2
-            GPIO.output(7, False)
-            GPIO.setup(15, GPIO.OUT) #plus of led2
-            GPIO.output(15, False)
-
+            #Setup leds
+            GPIO.setup(7, GPIO.OUT) #Home Goal led
+            GPIO.setup(8, GPIO.OUT) #Away Goal led
+            GPIO.setup(12, GPIO.OUT)#Script Running led
+            GPIO.setup(23, GPIO.OUT)#Internet OK led
+            #Turn all leds off 
+            GPIO.output(7, False) 
+            GPIO.output(8, False)
+            GPIO.output(12, False)
+            GPIO.output(23, False)
             #update ip and send logs
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(('google.com', 0))
             ipString = socket.gethostbyname(s.getsockname()[0])
             print ipString
             #get logs
-            log =  subprocess.check_output(["tail", "-n 20", "/home/pi/symfoni-hockey/snow.log"])
+            log =  subprocess.check_output(["tail", "-n 40", "/home/pi/symfoni-hockey/snow.log"])
             client_update_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_log_entry=log)
             client_update_thread.run()
             #test ping
@@ -68,8 +69,8 @@ def main():
             global isCalibrated
             while (isCalibrated == False):
                 print "Waiting for calibration"
-                GPIO.output(18, False)          
-                GPIO.output(15, True)
+                GPIO.output(7, False)          
+                GPIO.output(8, True)
                 time.sleep(1)
                 if ser.inWaiting()>0:
                     print "Calibrated port for Away(1) Team"
@@ -81,6 +82,9 @@ def main():
                     ser = serial.Serial(ports[0], timeout=1)
                     ser1 = serial.Serial(ports[1], timeout=1)
                     isCalibrated=True
+                    GPIO.output(8, True)
+                    GPIO.output(7, False)
+                    time.sleep(3)
                     break
                 if ser1.inWaiting()>0:
                     print "Calibrated port for Home(0) Team"
@@ -92,12 +96,15 @@ def main():
                     ser1 = serial.Serial(ports[0], timeout=1)
                     ser = serial.Serial(ports[1], timeout=1)
                     isCalibrated=True
+                    GPIO.output(7, True)
+                    GPIO.output(8, False)
+                    time.sleep(3)
                     break
-                GPIO.output(18, True)
-                GPIO.output(15, False)
+                GPIO.output(7, True)
+                GPIO.output(8, False)
                 time.sleep(1)
-            GPIO.output(18, True)
-            GPIO.output(15, True)
+            GPIO.output(12, True)
+            GPIO.output(23, True)
 
 
             #main loop
