@@ -18,7 +18,7 @@ def main():
         try:
             print 'Starting program:'
             print subprocess.check_output("date") # log time
-            # find usable serial ports
+            #Find usable serial ports
             ports = scan()
             print "Found ports:"
             for name in scan(): print name
@@ -27,16 +27,19 @@ def main():
             ser = serial.Serial(ports[0], timeout=1)
             ser1 = serial.Serial(ports[1], timeout=1)
                     
-            #setup soap 
+            #Setup soap 
             global instanceURL
             global user
             global soapPassword
             url = instanceURL + '/u_symfoni_hockey_goal.do?WSDL'
             urlUpdateIp = instanceURL + '/u_symfoni_hockey_raspberry_pi_status.do?WSDL'
             client = suds.client.Client(url, username=user, password=soapPassword)
+            #Setup threads
             home_goal_thread = goal_thread(client=client, u_goal_post=0)
             away_goal_thread = goal_thread(client=client, u_goal_post=1)
             updateIpClient= suds.client.Client(urlUpdateIp, username=user, password=soapPassword)
+            home_goal_thread.start()
+            away_goal_thread.start()
             print"Got wsdls and set up clients"                
 
             #Led pin setup
@@ -65,6 +68,7 @@ def main():
             client_update_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_startup="")
             #test ping
             ping_update_thread = ping_thread(url="www.google.com")
+            ping_update_thread.start()
             ping_update_thread.run()
             #calibrate goal ports
             global isCalibrated
@@ -85,7 +89,7 @@ def main():
                     isCalibrated=True
                     GPIO.output(8, True)
                     GPIO.output(7, False)
-                    time.sleep(1)
+                    time.sleep(0,5)
                     break
                 if ser1.inWaiting()>0:
                     print "Calibrated port for Home(0) Team"
@@ -99,7 +103,7 @@ def main():
                     isCalibrated=True
                     GPIO.output(7, True)
                     GPIO.output(8, False)
-                    time.sleep(1)
+                    time.sleep(0,5)
                     break
                 GPIO.output(7, True)
                 GPIO.output(8, False)
@@ -112,15 +116,15 @@ def main():
             while (True):
                 i+=1
                 if ser.inWaiting()>0:
-                    home_goal_thread.run()
                     print "Home goal"
                     wiggle_led(8, 15, False) # wiggle away led, leave it off
+                    home_goal_thread.run()
                     time.sleep(4)
                     ser.flushInput()
                 if ser1.inWaiting()>0:
-                    away_goal_thread.run()
                     print "Away goal"
                     wiggle_led(7, 15, False) # wiggle home led, leave it off
+                    away_goal_thread.run()
                     time.sleep(4)
                     ser1.flushInput()
                 time.sleep(0.01)
@@ -136,6 +140,7 @@ def main():
             time.sleep(10);
             main() 
         except Exception, e:
+            free_leds()
             print e
 
 def wiggle_led(port_number, amount, end_state):
@@ -145,6 +150,15 @@ def wiggle_led(port_number, amount, end_state):
         GPIO.output(port_number, False)
         time.sleep(0.1)
     GPIO.output(port_number, end_state)
+
+def free_leds():
+    #Turn all leds off
+    GPIO.output(7, False)
+    GPIO.output(8, False)
+    GPIO.output(12, False)
+    GPIO.output(23, False)
+    print "Program terminated with error " +str(e)
+    exit()
     
 
 def scan():
@@ -199,20 +213,12 @@ try:
     main()
 except KeyboardInterrupt:
                 #Turn all leds off
-                GPIO.output(7, False)
-                GPIO.output(8, False)
-                GPIO.output(12, False)
-                GPIO.output(23, False)
-
+                free_leds()
                 print "User terminated program"
                 exit()
 except e:
-                #Turn all leds off
-                GPIO.output(7, False)
-                GPIO.output(8, False)
-                GPIO.output(12, False)
-                GPIO.output(23, False)
-                print "Program terminated with error " +str(e)
+                free_leds()
+                print "Program exited with error " + str(e)
                 exit()
         
 
