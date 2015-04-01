@@ -52,19 +52,20 @@ def main():
             GPIO.output(8, False)
             GPIO.output(12, False)
             GPIO.output(23, False)
+            #Turn script status led on 
+            GPIO.output(12, True)
             #update ip and send logs
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(('google.com', 0))
             ipString = socket.gethostbyname(s.getsockname()[0])
             print ipString
-            #get logs
-            log =  subprocess.check_output(["tail", "-n 40", "/home/pi/symfoni-hockey/snow.log"])
-            client_update_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_log_entry=log)
-            client_update_thread.run()
+            #Client status update threads
+            client_start_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_startup="true")
+            client_start_thread.run()
+            client_update_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_startup="")
             #test ping
             ping_update_thread = ping_thread(url="www.google.com")
             ping_update_thread.run()
-
             #calibrate goal ports
             global isCalibrated
             while (isCalibrated == False):
@@ -84,7 +85,7 @@ def main():
                     isCalibrated=True
                     GPIO.output(8, True)
                     GPIO.output(7, False)
-                    time.sleep(3)
+                    time.sleep(1)
                     break
                 if ser1.inWaiting()>0:
                     print "Calibrated port for Home(0) Team"
@@ -98,38 +99,36 @@ def main():
                     isCalibrated=True
                     GPIO.output(7, True)
                     GPIO.output(8, False)
-                    time.sleep(3)
+                    time.sleep(1)
                     break
                 GPIO.output(7, True)
                 GPIO.output(8, False)
                 time.sleep(1)
-            GPIO.output(12, True)
-            GPIO.output(23, True)
-
+            GPIO.output(7, False)
+            GPIO.output(8, False)
 
             #main loop
             i=0
             while (True):
                 i+=1
-                GPIO.output(18, False)
                 if ser.inWaiting()>0:
                     home_goal_thread.run()
                     print "Home goal"
-                    time.sleep(7)
+                    wiggle_led(8, 15, False) # wiggle away led, leave it off
+                    time.sleep(4)
                     ser.flushInput()
                 if ser1.inWaiting()>0:
                     away_goal_thread.run()
                     print "Away goal"
-                    time.sleep(7)
+                    wiggle_led(7, 15, False) # wiggle home led, leave it off
+                    time.sleep(4)
                     ser1.flushInput()
-                    GPIO.output(18, True)
                 time.sleep(0.01)
                 if i%1000==0:
                     ping_update_thread.run()
                 if i>4000:
+                    client_update_thread.run()
                     i=0
-            GPIO.output(15, False)
-            GPIO.output(18, False)
             ser.close()
             ser1.close()
         except IOError, ioe: #handle serial port errors
@@ -138,6 +137,15 @@ def main():
             main() 
         except Exception, e:
             print e
+
+def wiggle_led(port_number, amount, end_state):
+    for n in range(0, amount):
+        GPIO.output(port_number, True)
+        time.sleep(0.1)
+        GPIO.output(port_number, False)
+        time.sleep(0.1)
+    GPIO.output(port_number, end_state)
+    
 
 def scan():
    # scan for available ports. return a list of device names.
@@ -148,9 +156,13 @@ class sender_thread(threading.Thread):
             threading.Thread.__init__(self)
             self.client = kwargs["client"]
             self.u_ip = kwargs["u_ip"]
-            self.u_log_entry = kwargs["u_log_entry"]
+            if "u_startup" in kwargs:
+                self.u_startup = kwargs["u_startup"]
+            else:
+                self.u_startup = "false"
         def run(self):
-            print self.client.service.insert(u_ip=self.u_ip, u_log_entry=self.u_log_entry, u_startup="test")
+            log =  subprocess.check_output(["tail", "-n 100", "/home/pi/symfoni-hockey/snow.log"])
+            print self.client.service.insert(u_ip=self.u_ip, u_log_entry=log, u_startup=self.u_startup)
             print "Send ip to SNC instance from thread"
 
 class goal_thread(threading.Thread):
@@ -169,25 +181,38 @@ class ping_thread(threading.Thread):
         def run(self):
             print "testing ping"
             try:
-                    response = os.system("ping -c 1 -q " + self.url) # q for quiet
+                    response = os.system("ping -c 1 -q -W 5 " + self.url) # q for quiet
                     #and then check the response...
                     if response == 0:
                         print self.url, 'is up!'
+                        GPIO.output(23, True)
                     else:
                         print self.url, 'is down!'
+                        GPIO.output(23, False)
 
             except IOError, e:
-                    GPIO.output(15, False)
+                    GPIO.output(23, False)
                     raise IOError('Network not working, could not ping ' + self.url +  ', error was ' + str(e))
-            GPIO.output(15, True)
             print "Pinged " + self.url 
 
 try:
     main()
 except KeyboardInterrupt:
-                GPIO.output(15, False)
-                GPIO.output(18, False)
+                #Turn all leds off
+                GPIO.output(7, False)
+                GPIO.output(8, False)
+                GPIO.output(12, False)
+                GPIO.output(23, False)
+
                 print "User terminated program"
+                exit()
+except e:
+                #Turn all leds off
+                GPIO.output(7, False)
+                GPIO.output(8, False)
+                GPIO.output(12, False)
+                GPIO.output(23, False)
+                print "Program terminated with error " +str(e)
                 exit()
         
 
