@@ -89,7 +89,7 @@ def main():
                     isCalibrated=True
                     GPIO.output(8, True)
                     GPIO.output(7, False)
-                    time.sleep(0,5)
+                    time.sleep(0.5)
                     break
                 if ser1.inWaiting()>0:
                     print "Calibrated port for Home(0) Team"
@@ -103,7 +103,7 @@ def main():
                     isCalibrated=True
                     GPIO.output(7, True)
                     GPIO.output(8, False)
-                    time.sleep(0,5)
+                    time.sleep(0.5)
                     break
                 GPIO.output(7, True)
                 GPIO.output(8, False)
