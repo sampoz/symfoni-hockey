@@ -16,6 +16,22 @@ soapPassword = '10L2M6fSN4JnHcH5ccq1'
 goal_interval = 5
 def main():
         try:
+            #Led pin setup
+            #Set GPIO numbering scheme to be BOARD (pin numbers, not names)
+            GPIO.setmode(GPIO.BOARD)
+            #Setup leds
+            GPIO.setup(7, GPIO.OUT) #Home Goal led
+            GPIO.setup(8, GPIO.OUT) #Away Goal led
+            GPIO.setup(12, GPIO.OUT)#Script Running led
+            GPIO.setup(23, GPIO.OUT)#Internet OK led
+            #Turn all leds off 
+            GPIO.output(7, False)
+            GPIO.output(8, False)
+            GPIO.output(12, False)
+            GPIO.output(23, False)
+            #Turn script status led on 
+            GPIO.output(12, True)
+
             print 'Starting program:'
             print subprocess.check_output("date") # log time
             #Find usable serial ports
@@ -26,7 +42,13 @@ def main():
                 raise IOError("Missing usb com ports, found "+str(len(ports)) +" ports, was expecting 2") 
             ser = serial.Serial(ports[0], timeout=1)
             ser1 = serial.Serial(ports[1], timeout=1)
-                    
+
+            #ping google
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(('google.com', 0))
+            ipString = socket.gethostbyname(s.getsockname()[0])
+            print ipString
+            GPIO.output(23, True)  
             #Setup soap 
             global instanceURL
             global user
@@ -42,26 +64,6 @@ def main():
             away_goal_thread.start()
             print"Got wsdls and set up clients"                
 
-            #Led pin setup
-            #Set GPIO numbering scheme to be BOARD (pin numbers, not names)
-            GPIO.setmode(GPIO.BOARD) 
-            #Setup leds
-            GPIO.setup(7, GPIO.OUT) #Home Goal led
-            GPIO.setup(8, GPIO.OUT) #Away Goal led
-            GPIO.setup(12, GPIO.OUT)#Script Running led
-            GPIO.setup(23, GPIO.OUT)#Internet OK led
-            #Turn all leds off 
-            GPIO.output(7, False) 
-            GPIO.output(8, False)
-            GPIO.output(12, False)
-            GPIO.output(23, False)
-            #Turn script status led on 
-            GPIO.output(12, True)
-            #update ip and send logs
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(('google.com', 0))
-            ipString = socket.gethostbyname(s.getsockname()[0])
-            print ipString
             #Client status update threads
             client_start_thread = sender_thread(client=updateIpClient, u_ip=ipString, u_startup="true")
             client_start_thread.run()
